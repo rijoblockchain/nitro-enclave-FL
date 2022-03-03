@@ -39,7 +39,7 @@ import logging
 #import tflite_runtime.interpreter as tflite
 
 #declear path to your mnist data folder
-img_path = '/home/ec2-user/nitro-enclave-tensorflow/org1/covid_data/'
+img_path = '/home/ec2-user/nitro-enclave-FL/org1/covid_data/'
 
 #get the path list using the path object
 image_paths = list(paths.list_images(img_path))
@@ -182,7 +182,7 @@ scaled_local_weight_list.append(scaled_weights)
 #########################################
 
 #declear path to your mnist data folder
-img_path = '/home/ec2-user/nitro-enclave-tensorflow/org2/covid_data/'
+img_path = '/home/ec2-user/nitro-enclave-FL/org2/covid_data/'
 
 #get the path list using the path object
 image_paths = list(paths.list_images(img_path))
@@ -241,13 +241,11 @@ global_model.set_weights(npa)
 # print(global_model.get_weights())
 # print('done')
 
+global_weights = global_model.get_weights()
 
-
-def encrypt_in_memory(incoming_bytes: bytes, public_key):
-    symmetric_key = Fernet.generate_key()
-    encrypted_key = rsa_base.encrypt(symmetric_key, public_key)
+def encrypt_in_memory(incoming_bytes: bytes, symmetric_key):
     encrypted_contents = Fernet(symmetric_key).encrypt(incoming_bytes)
-    return encrypted_key, encrypted_contents
+    return encrypted_contents
 
 def load_rsa_keys():
     with open('parent_public_key.pem', 'rb') as f:
@@ -260,19 +258,45 @@ data = b''
 (parent_public_key, parent_private_key) = load_rsa_keys()
 data += parent_public_key._save_pkcs1_pem()
 parent_public_key = rsa_base.PublicKey.load_pkcs1(data)
-encrypted_key, encrypted_contents = encrypt_in_memory(bytes(np.array(global_model.get_weights())), parent_public_key)
-print(encrypted_contents)
+symmetric_key = Fernet.generate_key()
+encrypted_key = rsa_base.encrypt(symmetric_key, parent_public_key)
+encrypted_weights = list()
+for x in range(len(global_weights)):
+    encrypted_content = encrypt_in_memory(global_weights[x].tobytes(), symmetric_key)
+    encrypted_weights.append(encrypted_content)
+    #print(bytes(global_weights[x]))
+    #print(np.array(bytes(global_weights[x])))
+# print(len(global_weights))
+# print(len(encrypted_weights))
+# print(type(encrypted_weights))
+# for x in range(len(encrypted_weights)):
+#     print(encrypted_weights[x])
+#     print(type(encrypted_weights[x]))
+#     break
+
 
 def decrypt_in_memory(encrypted_contents: bytes, encrypted_key: bytes, private_key):
-    print('Decrypting symmetric key')
     decrypted_key = rsa_base.decrypt(encrypted_key, private_key)
-    print('Decrypting contents with symmetric key')
     decrypted_contents = Fernet(decrypted_key).decrypt(encrypted_contents)
     return decrypted_contents
 
-data = b''
+
 (parent_public_key, parent_private_key) = load_rsa_keys()
-decrypted_contents = decrypt_in_memory(encrypted_contents, encrypted_key, parent_private_key)
+decrypted_weights = list()
+for x in range(len(encrypted_weights)):
+    decrypted_content = decrypt_in_memory(encrypted_weights[x], encrypted_key, parent_private_key)
+    decrypted_weights.append(np.frombuffer(decrypted_content, dtype=np.float32))
+print(decrypted_weights)
+print('#############################\n############################')
+print(global_weights)
+# print(len(decrypted_weights))
+# print(type(decrypted_weights))
+# for x in range(len(decrypted_weights)):
+#     print(decrypted_weights[x])
+#     print(type(decrypted_weights[x]))
+#     break
+
+
 
 #print(np.array(decrypted_contents))
 np.save('global_weights.npy', global_model.get_weights(), allow_pickle=True)
@@ -381,15 +405,17 @@ loaded_np = np.load(load_bytes, allow_pickle=True)
 # print('###########################################################')
 # print(npa)
 
-arr = list()
-for x in range(len(global_weights)):
-    arr.append(bytes(global_weights[x]))
+# arr = list()
+# for x in range(len(global_weights)):
+#     arr.append(global_weights[x].tobytes())
 
-arr1 = list()
-for x in range(len(global_weights)):
-    arr1.append(np.array(global_weights[x]))
+# arr1 = list()
+# for x in range(len(arr)):
+#     arr1.append(np.frombuffer(arr[x], dtype=np.float32))
 
-print(arr1)
+# print(arr1)
+#print(decrypted_weights)
+# print(global_weights)
     
 
 
