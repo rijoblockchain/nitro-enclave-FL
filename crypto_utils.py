@@ -163,3 +163,8 @@ def decrypt_in_memory(encrypted_contents: bytes, encrypted_key: bytes, private_k
     print('Decrypting contents with symmetric key')
     decrypted_contents = Fernet(decrypted_key).decrypt(encrypted_contents)
     return decrypted_contents
+
+def decrypt_local_weights(encrypted_contents: bytes, encrypted_key: bytes, private_key):
+    decrypted_key = rsa_base.decrypt(encrypted_key, private_key)
+    decrypted_contents = Fernet(decrypted_key).decrypt(encrypted_contents)
+    return decrypted_contents
