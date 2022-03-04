@@ -18,20 +18,25 @@ random.seed()
 print('Hello from within the enclave!')
 
 
+
 class VsockStream:
     """Client"""
     def __init__(self, conn_tmo=60, conn_backlog=128):
         self.conn_tmo = conn_tmo
         self.conn_backlog = conn_backlog
-        self.encrypted_weights = list()
+        self.encrypted_weights_org1 = list()
+        self.encrypted_weights_org2 = list()
         self.parent_public_key = None
-        self.encrypted_weights_received = None
-        self.encrypted_key_received = None
-        self.decrypted_weights = list()
+        self.encrypted_weights_received_org1 = None
+        self.encrypted_weights_received_org2 = None
+        self.encrypted_key_received_org1 = None
+        self.encrypted_key_received_org2 = None
+        self.decrypted_weights_org1 = list()
+        self.decrypted_weights_org2 = list()
 
-        self.files_received = [0, 0, 0] # --> [image, sym key, pub key]
+        self.files_received = [0, 0, 0] # --> [weights, sym key, pub key]
         self.all_files_received = False
-    
+
         print('Loading enclave private/public keypair...')
         (self.enclave_public_key, self.enclave_private_key) = load_rsa_keys()
         print('done.')
@@ -82,7 +87,7 @@ class VsockStream:
         else:
             print('Classification unsuccessful: image not received yet.')
 
-    def recv_data_enclave(self):
+    def recv_data_enclave_org1(self):
         full_msg = ''
         
         (from_client, (remote_cid, remote_port)) = self.sock.accept()
@@ -96,45 +101,100 @@ class VsockStream:
             while len(data) < length:
                 to_read = length - len(data)
                 data += from_client.recv(4096 if to_read > 4096 else to_read)
-            if length > 500: # assume anything larger is our (encrypted) image
-                self.encrypted_weights_received = data
-                self.encrypted_weights = pickle.loads(self.encrypted_weights_received)
+            if length > 500: # assume anything larger is our (encrypted) weights
+                self.encrypted_weights_received_org1 = data
+                self.encrypted_weights_org1 = pickle.loads(self.encrypted_weights_received_org1)
                 print('Encrypted weights received.')
                 #print(self.encrypted_weights_received)
                 self.files_received[0] = 1
-                if self.encrypted_key_received is not None and len(self.decrypted_weights)==0:
+                if self.encrypted_key_received_org1 is not None and len(self.decrypted_weights_org1)==0:
                     # print('Generating some entropy...')
                     # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
                     # time.sleep(10)
                     
-                    for x in range(len(self.encrypted_weights)):
-                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights[x], self.encrypted_key_received, self.enclave_private_key)
-                        self.decrypted_weights.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
+                    for x in range(len(self.encrypted_weights_org1)):
+                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
+                        self.decrypted_weights_org1.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights)
+                    print(self.decrypted_weights_org1)
                 else:
-                    print('Still waiting for key to decrypt weights...')
+                    print('Still waiting for key to decrypt weights for org1...')
             elif length > 200 and length < 275: # this must be our encrypted symmetric key
-                self.encrypted_key_received = data
+                self.encrypted_key_received_org1 = data
                 print('Encryption key received.')
                 self.files_received[1] = 1
-                if self.encrypted_weights_received is not None and len(self.decrypted_weights)==0:
+                if self.encrypted_weights_received_org1 is not None and len(self.decrypted_weights_org1)==0:
                     # print('Generating some entropy...')
                     # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
                     # time.sleep(10)
-                    for x in range(len(self.encrypted_weights)):
-                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights[x], self.encrypted_key_received, self.enclave_private_key)
-                        self.decrypted_weights.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
+                    for x in range(len(self.encrypted_weights_org1)):
+                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
+                        self.decrypted_weights_org1.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights)
+                    print(self.decrypted_weights_org1)
                 else:
-                    print('Have the key but still waiting for image to decrypt')
+                    print('Have the key but still waiting for org1 weights to decrypt')
             else: # parent's public key
                 self.parent_public_key = rsa_base.PublicKey.load_pkcs1(data)
                 print('Parent\'s public key received.')
                 self.files_received[2] = 1
         if sum(self.files_received) == 3:
+            self.files_received = [0, 0]
             self.all_files_received = True
+            print('All files received!')
+
+    
+    def recv_data_enclave_org2(self):
+        full_msg = ''
+        
+        (from_client, (remote_cid, remote_port)) = self.sock.accept()
+        msg = from_client.recv(8)
+        if len(msg) == 8:
+            (length,) = unpack('>Q', msg)
+            print(f'Message of length {str(length)} incoming.')
+            data = b''
+            while len(data) < length:
+                to_read = length - len(data)
+                data += from_client.recv(4096 if to_read > 4096 else to_read)
+            if length > 500: # assume anything larger is our (encrypted) weights
+                self.encrypted_weights_received_org2 = data
+                self.encrypted_weights_org2 = pickle.loads(self.encrypted_weights_received_org2)
+                print('Encrypted weights received.')
+                #print(self.encrypted_weights_received)
+                self.files_received[0] = 1
+                if self.encrypted_key_received_org2 is not None and len(self.decrypted_weights_org2)==0:
+                    # print('Generating some entropy...')
+                    # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                    # time.sleep(10)
+                    
+                    for x in range(len(self.encrypted_weights_org2)):
+                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org2[x], self.encrypted_key_received_org2, self.enclave_private_key)
+                        self.decrypted_weights_org2.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
+                    print('Weights decrypted')
+                    print(self.decrypted_weights_org2)
+                else:
+                    print('Still waiting for key to decrypt weights for org2...')
+            else: # this must be our encrypted symmetric key
+                self.encrypted_key_received_org2 = data
+                print('Encryption key received.')
+                self.files_received[1] = 1
+                if self.encrypted_weights_received_org2 is not None and len(self.decrypted_weights_org2)==0:
+                    # print('Generating some entropy...')
+                    # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                    # time.sleep(10)
+                    for x in range(len(self.encrypted_weights_org2)):
+                        self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org2[x], self.encrypted_key_received_org2, self.enclave_private_key)
+                        self.decrypted_weights_org2.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
+                    print('Weights decrypted')
+                    print(self.decrypted_weights_org2)
+                else:
+                    print('Have the key but still waiting for org2 weights to decrypt')
+            # else: # parent's public key
+            #     self.parent_public_key = rsa_base.PublicKey.load_pkcs1(data)
+            #     print('Parent\'s public key received.')
+            #     self.files_received[2] = 1
+        if sum(self.files_received) == 2:
+            self.all_files_received = False
             print('All files received!')
 
 
@@ -150,11 +210,19 @@ def stream_handler(args):
 
     time.sleep(2)
 
-    # receive encrypted image, symmetric key, and public key
+    # receive encrypted weights, symmetric key, and public key
     client.bind(args.port_in)
-    print('Ready to receive keys and files')
+    print('Ready to receive keys and files for org1')
     while client.all_files_received == False:
-        client.recv_data_enclave()
+        client.recv_data_enclave_org1()
+        time.sleep(2)
+    
+    # files_received = [0, 0, 0] # --> [weights, sym key, pub key]
+    # all_files_received = False
+
+    print('Ready to receive keys and files for org2')
+    while client.all_files_received == True:
+        client.recv_data_enclave_org2()
         time.sleep(2)
 
     # send inference back

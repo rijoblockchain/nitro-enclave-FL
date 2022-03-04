@@ -1,5 +1,6 @@
-# import cryptography
-# import numpy as np
+import cryptography
+import numpy as np
+from struct import unpack, pack
 
 # # import required module
 # from cryptography.fernet import Fernet
@@ -49,8 +50,11 @@
 # b = np.load('global_weights_dec.npy', allow_pickle=True)
 # print(b)
 
+in_file = open("org2_encrypted_key.txt", "rb") 
+encrypted_key = in_file.read() 
+in_file.close()
 
-a = list()
-a.append(1)
-if len(a)==0:
-    print('No values')
+msg = pack('>Q', len(encrypted_key))
+print(msg)
+(length,) = unpack('>Q', msg)
+print(length)

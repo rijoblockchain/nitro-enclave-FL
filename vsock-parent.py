@@ -43,7 +43,7 @@ class VsockStream:
         self.sock.sendall(self.parent_public_key._save_pkcs1_pem())
         print('Keys sent from parent')
 
-    def send_weights_parent(self, endpoint):
+    def send_weights_parent_org1(self, endpoint):
         in_file = open("org1_encrypted_key.txt", "rb") 
         encrypted_key = in_file.read() 
         in_file.close()
@@ -51,7 +51,33 @@ class VsockStream:
         org1_local_weights_encrypted = np.load('org1_local_weights.npy', allow_pickle=True)
         data_string = pickle.dumps(org1_local_weights_encrypted)
         length = pack('>Q', len(data_string))
-        print(f'Sending image of length {str(len(data_string))}')
+        print(f'Sending weights of length {str(len(data_string))}')
+        while True:
+            try:
+                self.sock.sendall(length)
+                print('Length message sent')
+                self.sock.sendall(data_string)
+                break
+            except socket.timeout:
+                time.sleep(2)
+    
+        length = pack('>Q', len(encrypted_key))
+        print('Sending symmetric key of length: ', str(len(encrypted_key)))
+        self.connect(endpoint)
+        self.sock.sendall(length)
+        self.sock.sendall(encrypted_key)
+
+        self.sock.close()
+            
+    def send_weights_parent_org2(self, endpoint):
+        in_file = open("org2_encrypted_key.txt", "rb") 
+        encrypted_key = in_file.read() 
+        in_file.close()
+
+        org2_local_weights_encrypted = np.load('org2_local_weights.npy', allow_pickle=True)
+        data_string = pickle.dumps(org2_local_weights_encrypted)
+        length = pack('>Q', len(data_string))
+        print(f'Sending weights of length {str(len(data_string))}')
         while True:
             try:
                 self.sock.sendall(length)
@@ -79,7 +105,10 @@ def client_handler(args):
     client.send_keys_parent()
     
     client.connect(endpoint)
-    client.send_weights_parent(endpoint)
+    client.send_weights_parent_org1(endpoint)
+
+    client.connect(endpoint)
+    client.send_weights_parent_org2(endpoint)
 
 
 class VsockListener:
