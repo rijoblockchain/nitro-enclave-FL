@@ -2,7 +2,7 @@
 # see Dockerfile for usage
 
 import argparse
-import socket
+import socket, pickle
 from struct import unpack, pack
 import sys
 from crypto_utils import *
@@ -11,6 +11,7 @@ import time
 import random
 import subprocess
 import rsa as rsa_base
+import numpy as np
 
 random.seed()
 
@@ -85,37 +86,41 @@ class VsockStream:
         
         (from_client, (remote_cid, remote_port)) = self.sock.accept()
         msg = from_client.recv(8)
+        print(msg)
         if len(msg) == 8:
             (length,) = unpack('>Q', msg)
+            print(length)
             print(f'Message of length {str(length)} incoming.')
             data = b''
             while len(data) < length:
                 to_read = length - len(data)
                 data += from_client.recv(4096 if to_read > 4096 else to_read)
             if length > 500: # assume anything larger is our (encrypted) image
-                self.encrypted_image_received = data
+                self.encrypted_weights_received = data
+                data_arr = pickle.loads(self.encrypted_weights_received)
                 print('Encrypted image received.')
+                #print(self.encrypted_weights_received)
                 self.files_received[0] = 1
-                if self.encrypted_key_received is not None and self.image_received is None:
-                    print('Generating some entropy...')
-                    subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
-                    time.sleep(10)
-                    self.image_received = decrypt_in_memory(self.encrypted_image_received, self.encrypted_key_received, self.enclave_private_key)
-                    print('Image decrypted')
-                else:
-                    print('Still waiting for key to decrypt image...')
-            elif length < 275: # this must be our encrypted symmetric key
+                # if self.encrypted_key_received is not None and self.image_received is None:
+                #     print('Generating some entropy...')
+                #     subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                #     time.sleep(10)
+                #     self.image_received = decrypt_in_memory(self.encrypted_image_received, self.encrypted_key_received, self.enclave_private_key)
+                #     print('Image decrypted')
+                # else:
+                #     print('Still waiting for key to decrypt image...')
+            elif length > 200 and length < 275: # this must be our encrypted symmetric key
                 self.encrypted_key_received = data
                 print('Encryption key received.')
                 self.files_received[1] = 1
-                if self.encrypted_image_received is not None and self.image_received is None:
-                    print('Generating some entropy...')
-                    subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
-                    time.sleep(10)
-                    self.image_received = decrypt_in_memory(self.encrypted_image_received, self.encrypted_key_received, self.enclave_private_key)
-                    print('Image decrypted')
-                else:
-                    print('Have the key but still waiting for image to decrypt')
+                # if self.encrypted_image_received is not None and self.image_received is None:
+                #     print('Generating some entropy...')
+                #     subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                #     time.sleep(10)
+                #     self.image_received = decrypt_in_memory(self.encrypted_image_received, self.encrypted_key_received, self.enclave_private_key)
+                #     print('Image decrypted')
+                # else:
+                #     print('Have the key but still waiting for image to decrypt')
             else: # parent's public key
                 self.parent_public_key = rsa_base.PublicKey.load_pkcs1(data)
                 print('Parent\'s public key received.')

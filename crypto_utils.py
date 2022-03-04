@@ -26,6 +26,13 @@ def load_rsa_keys():
         privkey = rsa_base.PrivateKey.load_pkcs1(f.read())
     return (pubkey, privkey)
 
+def load_rsa_keys_parent():
+    with open('parent_public_key.pem', 'rb') as f:
+        pubkey = rsa_base.PublicKey.load_pkcs1(f.read())
+    with open('parent_private_key.pem', 'rb') as f:
+        privkey = rsa_base.PrivateKey.load_pkcs1(f.read())
+    return (pubkey, privkey)
+
 
 def generate_and_save_keys(private_key_path='private_key.pem', public_key_path='public_key.pem'):
     # generate and store keys

@@ -3,13 +3,15 @@
 # (in a new terminal): python3 vsock-parent.py client 16 5006 (16 is the enclave CID)
 
 import argparse
-import socket
+import socket, pickle
 from struct import unpack, pack
 import sys
 from crypto_utils import *
 import time
+import numpy as np
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+
 
 
 class VsockStream:
@@ -34,24 +36,27 @@ class VsockStream:
 
     def send_keys_parent(self):
         print('Loading keys.')
-        (self.parent_public_key, self.parent_private_key) = load_rsa_keys()
+        (self.parent_public_key, self.parent_private_key) = load_rsa_keys_parent()
         length = pack('>Q', len(self.parent_public_key._save_pkcs1_pem()))
+        print(length)
         self.sock.sendall(length)
         self.sock.sendall(self.parent_public_key._save_pkcs1_pem())
         print('Keys sent from parent')
 
-    def send_image_parent(self, endpoint):
-        encrypted_key = encrypt_image('basal_cell_carcinoma_example.png', 'enclave_public_key_received.pem')
-        with open('basal_cell_carcinoma_example.png.encrypted', 'rb') as f:
-            image_contents = f.read()
+    def send_weights_parent(self, endpoint):
+        in_file = open("org1_encrypted_key.txt", "rb") 
+        encrypted_key = in_file.read() 
+        in_file.close()
 
-        length = pack('>Q', len(image_contents))
-        print(f'Sending image of length {str(len(image_contents))}')
+        org1_local_weights_encrypted = np.load('org1_local_weights.npy', allow_pickle=True)
+        data_string = pickle.dumps(org1_local_weights_encrypted)
+        length = pack('>Q', len(data_string))
+        print(f'Sending image of length {str(len(data_string))}')
         while True:
             try:
                 self.sock.sendall(length)
                 print('Length message sent')
-                self.sock.sendall(image_contents)
+                self.sock.sendall(data_string)
                 break
             except socket.timeout:
                 time.sleep(2)
@@ -74,7 +79,7 @@ def client_handler(args):
     client.send_keys_parent()
     
     client.connect(endpoint)
-    client.send_image_parent(endpoint)
+    client.send_weights_parent(endpoint)
 
 
 class VsockListener:
