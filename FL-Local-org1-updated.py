@@ -1,70 +1,3 @@
-import cryptography
-import numpy as np
-from struct import unpack, pack
-
-# # import required module
-# from cryptography.fernet import Fernet
-
-# # key generation
-# key = Fernet.generate_key()
-  
-# # string the key in a file
-# with open('filekey.key', 'wb') as filekey:
-#    filekey.write(key)
-
-
-# # opening the key
-# with open('filekey.key', 'rb') as filekey:
-#     key = filekey.read()
-  
-# # using the generated key
-# fernet = Fernet(key)
-  
-# # opening the original file to encrypt
-# with open('global_weights.npy', 'rb') as file:
-#     original = file.read()
-      
-# # encrypting the file
-# encrypted = fernet.encrypt(original)
-  
-# # opening the file in write mode and 
-# # writing the encrypted data
-# with open('global_weights.npy', 'wb') as encrypted_file:
-#     encrypted_file.write(encrypted)
-
-# # using the key
-# fernet = Fernet(key)
-  
-# # opening the encrypted file
-# with open('global_weights.npy', 'rb') as enc_file:
-#     encrypted = enc_file.read()
-  
-# # decrypting the file
-# decrypted = fernet.decrypt(encrypted)
-  
-# # opening the file in write mode and
-# # writing the decrypted data
-# with open('global_weights_dec.npy', 'wb') as dec_file:
-#     dec_file.write(decrypted)
-
-# b = np.load('global_weights_dec.npy', allow_pickle=True)
-# print(b)
-
-# in_file = open("org2_encrypted_key.txt", "rb") 
-# encrypted_key = in_file.read() 
-# in_file.close()
-
-# msg = pack('>Q', len(encrypted_key))
-# print(msg)
-# (length,) = unpack('>Q', msg)
-# print(length)
-
-# a = list()
-# a.append(1)
-# if a:
-#     print('hello')
-
-
 import numpy as np
 import random
 import cv2
@@ -165,37 +98,33 @@ global_weights_decrypted = list()
 for x in range(len(global_weights_encrypted)):
     decrypted_content = decrypt_local_weights(global_weights_encrypted[x], encrypted_key, parent_private_key)
     global_weights_decrypted.append(np.frombuffer(decrypted_content, dtype=np.float32))
-    
 
-# for x in range(len(global_weights_encrypted)):
-#     decrypted_content = decrypt_local_weights(global_weights_encrypted[x], encrypted_key, parent_private_key)
-#     global_weights.append(np.frombuffer(decrypted_content, dtype=np.float32))
 
-new_global_weights = list()
-for x in range(len(global_weights_decrypted)):
-    new_global_weights.append(np.asarray(global_weights_decrypted[x], dtype=np.float32))
+
+
+
+b = list()
+b.append(global_weights_decrypted[0].reshape([1024, 200]))
+b.append(global_weights_decrypted[1])
+b.append(global_weights_decrypted[2].reshape([200, 200]))
+b.append(global_weights_decrypted[3])
+b.append(global_weights_decrypted[4].reshape([200, 4]))
+b.append(global_weights_decrypted[5])
+
+for x in range(len(b)): 
+    print(b[x].shape)
+
+print(b)
+# new_global_weights = list()
+# for x in range(len(global_weights_decrypted)):
+#     new_global_weights.append(np.asarray(global_weights_decrypted[x], dtype=np.float32))
 
 #print(new_global_weights)
 # print(len(global_weights))
-for x in range(len(new_global_weights)):
-    print(new_global_weights[x].shape)
+# for x in range(len(new_global_weights)):
+#     print(new_global_weights[x].shape)
         
 #set local model weight to the weight of the global model
-# local_model1.set_weights(new_global_weights)
+local_model1.set_weights(b)
 
-# print(local_model1.get_weights())
-
-# (1024, 200)
-# (200,)
-# (200, 200)
-# (200,)
-# (200, 4)
-# (4,)
-
-
-# (204800,)
-# (200,)
-# (40000,)
-# (200,)
-# (800,)
-# (4,)
+print(local_model1.get_weights())

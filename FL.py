@@ -220,6 +220,10 @@ local_model2.set_weights(global_weights)
 #fit local model with client's data
 local_model2.fit(client_batched, epochs=1, verbose=0)
 
+for x in range(len(local_model2.get_weights())):
+    print(local_model2.get_weights()[x].shape)
+
+
 bs = list(client_batched)[0][0].shape[0]
 local_count2 = tf.data.experimental.cardinality(client_batched).numpy()*bs
 print(local_count2) #6368
@@ -235,6 +239,9 @@ average_weights = sum_scaled_weights(scaled_local_weight_list)
 npa = list()
 for x in range(len(average_weights)):
     npa.append(np.asarray(average_weights[x], dtype=np.float32))
+print(len(npa))
+for x in range(len(npa)):
+    print(npa[x].shape)
 
 global_model.set_weights(npa)
 
@@ -286,9 +293,9 @@ decrypted_weights = list()
 for x in range(len(encrypted_weights)):
     decrypted_content = decrypt_in_memory(encrypted_weights[x], encrypted_key, parent_private_key)
     decrypted_weights.append(np.frombuffer(decrypted_content, dtype=np.float32))
-print(decrypted_weights)
-print('#############################\n############################')
-print(global_weights)
+# print(decrypted_weights)
+# print('#############################\n############################')
+# print(global_weights)
 # print(len(decrypted_weights))
 # print(type(decrypted_weights))
 # for x in range(len(decrypted_weights)):

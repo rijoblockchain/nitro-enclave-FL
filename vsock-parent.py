@@ -146,8 +146,8 @@ class VsockListener:
                     to_read = length - len(data)
                     data += from_client.recv(1024 if to_read > 1024 else to_read)
                 
-                if length > 200 and length < 275: # this must be our encrypted symmetric key (usually 256 bytes)
-                    with open('inference_key_received', 'wb') as f:
+                if length < 100: # this must be our encrypted symmetric key (usually 256 bytes)
+                    with open('weights_key_received', 'wb') as f:
                         f.write(data)
                     print('Encryption key received.')
                     self.files_received[0] = 1
@@ -157,6 +157,7 @@ class VsockListener:
                     encrypted_weights_received = data
                     self.encrypted_average_weights = pickle.loads(encrypted_weights_received)
                     print('Encrypted weights received.')
+                    np.save('encrypted_average_weights.npy', self.encrypted_average_weights, allow_pickle=True)
                     #print(self.encrypted_weights_received)
                     self.files_received[1] = 1
                     if self.files_received[0] and self.files_received[1]:
@@ -192,7 +193,7 @@ class VsockListener:
                     if self.files_received[0] and self.files_received[1]:
                         break
                 elif length < 120: # assume anything smaller is our (encrypted) inference
-                    with open('inference_received.txt.encrypted', 'wb') as f:
+                    with open('weights_received.txt.encrypted', 'wb') as f:
                         f.write(data)
                     print('Encrypted inference received.')
                     self.files_received[1] = 1

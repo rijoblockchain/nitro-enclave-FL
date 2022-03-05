@@ -93,7 +93,7 @@ class VsockStream:
 
             data_string = pickle.dumps(self.encrypted_average_weights)
             length = pack('>Q', len(data_string))
-            print(f'Sending encrypted avergae weights of length {str(len(data_string))}')
+            print(f'Sending encrypted average weights of length {str(len(data_string))}')
             while True:
                 try:
                     self.sock.sendall(length)
