@@ -9,6 +9,7 @@ import sys
 import time
 import subprocess
 import rsa as rsa_base
+from crypto_utils import *
 from imutils import paths
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
@@ -179,15 +180,6 @@ scaled_weights = scale_model_weights(local_model2.get_weights(), scaling_factor)
 # print(scaled_weights)
 # scaled_local_weight_list.append(scaled_weights)
 
-
-def encrypt_local_weights(incoming_bytes: bytes, symmetric_key):
-    encrypted_contents = Fernet(symmetric_key).encrypt(incoming_bytes)
-    return encrypted_contents
-
-def load_keys():
-    with open('enclave_public_key_received.pem', 'rb') as f:
-        pubkey = rsa_base.PublicKey.load_pkcs1(f.read())
-    return pubkey
 
 data = b''
 parent_public_key = load_keys()

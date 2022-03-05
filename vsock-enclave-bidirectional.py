@@ -33,6 +33,11 @@ class VsockStream:
         self.encrypted_key_received_org2 = None
         self.decrypted_weights_org1 = list()
         self.decrypted_weights_org2 = list()
+        self.scaled_local_weight_list = list()
+        self.new_weights = list()
+        self.new_global_weights = list()
+        self.encrypted_key = None
+        self.encrypted_average_weights = list()
 
         self.files_received = [0, 0, 0] # --> [weights, sym key, pub key]
         self.all_files_received = False
@@ -59,6 +64,56 @@ class VsockStream:
         print('Sending public key of length: ', str(len(self.enclave_public_key._save_pkcs1_pem())))
         self.sock.sendall(self.enclave_public_key._save_pkcs1_pem())
         print('Keys sent from enclave')
+    
+    def sum_scaled_weights(self, scaled_weight_list):
+        '''Return the sum of the listed scaled weights. The is equivalent to scaled avg of the weights'''
+
+        for weights_list_tuple in zip(*scaled_weight_list):
+            self.new_weights.append(
+                [np.array(weights_).mean(axis=0)\
+                    for weights_ in zip(*weights_list_tuple)])
+    
+        return self.new_weights
+
+    def average_weights_and_encryption(self, endpoint):
+        if self.decrypted_weights_org1:
+            print('Calculating the average of weights from org1, org2 and org3')
+            self.scaled_local_weight_list.append(self.decrypted_weights_org1)
+            self.scaled_local_weight_list.append(self.decrypted_weights_org2)
+             #to get the average over all the local model, we simply take the sum of the scaled weights
+            average_weights = self.sum_scaled_weights(self.scaled_local_weight_list)
+            for x in range(len(average_weights)):
+                self.new_global_weights.append(np.asarray(average_weights[x], dtype=np.float32))
+        
+            symmetric_key = Fernet.generate_key()
+            self.encrypted_key = rsa_base.encrypt(symmetric_key, self.parent_public_key)
+            for x in range(len(self.new_global_weights)):
+                encrypted_content = encrypt_local_weights(self.new_global_weights[x].tobytes(), symmetric_key)
+                self.encrypted_average_weights.append(encrypted_content)
+
+            data_string = pickle.dumps(self.encrypted_average_weights)
+            length = pack('>Q', len(data_string))
+            print(f'Sending encrypted avergae weights of length {str(len(data_string))}')
+            while True:
+                try:
+                    self.sock.sendall(length)
+                    print('Length message sent')
+                    self.sock.sendall(data_string)
+                    break
+                except socket.timeout:
+                    time.sleep(2)
+        
+            length = pack('>Q', len(self.encrypted_key))
+            print('Sending symmetric key of length: ', str(len(self.encrypted_key)))
+            self.connect(endpoint)
+            self.sock.sendall(length)
+            self.sock.sendall(self.encrypted_key)
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+        else:
+            print('Global gradient update failed')
+
+
 
     def classify_and_send_inference(self, endpoint):
         if self.image_received:
@@ -92,10 +147,8 @@ class VsockStream:
         
         (from_client, (remote_cid, remote_port)) = self.sock.accept()
         msg = from_client.recv(8)
-        print(msg)
         if len(msg) == 8:
             (length,) = unpack('>Q', msg)
-            print(length)
             print(f'Message of length {str(length)} incoming.')
             data = b''
             while len(data) < length:
@@ -116,7 +169,6 @@ class VsockStream:
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
                         self.decrypted_weights_org1.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights_org1)
                 else:
                     print('Still waiting for key to decrypt weights for org1...')
             elif length > 200 and length < 275: # this must be our encrypted symmetric key
@@ -131,7 +183,6 @@ class VsockStream:
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
                         self.decrypted_weights_org1.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights_org1)
                 else:
                     print('Have the key but still waiting for org1 weights to decrypt')
             else: # parent's public key
@@ -171,7 +222,6 @@ class VsockStream:
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org2[x], self.encrypted_key_received_org2, self.enclave_private_key)
                         self.decrypted_weights_org2.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights_org2)
                 else:
                     print('Still waiting for key to decrypt weights for org2...')
             else: # this must be our encrypted symmetric key
@@ -186,7 +236,6 @@ class VsockStream:
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org2[x], self.encrypted_key_received_org2, self.enclave_private_key)
                         self.decrypted_weights_org2.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
                     print('Weights decrypted')
-                    print(self.decrypted_weights_org2)
                 else:
                     print('Have the key but still waiting for org2 weights to decrypt')
             # else: # parent's public key
@@ -225,9 +274,11 @@ def stream_handler(args):
         client.recv_data_enclave_org2()
         time.sleep(2)
 
-    # send inference back
-    print('Enclave sending inference...')
-    # client.connect(endpoint)
+    # Take the average of weights and send the result back
+    print('Enclave calculating the average of weights...')
+    client.connect(endpoint)
+    client.average_weights_and_encryption(endpoint)
+    print('Average is calculated')
     # client.classify_and_send_inference(endpoint)
 
 

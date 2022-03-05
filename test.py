@@ -50,11 +50,16 @@ from struct import unpack, pack
 # b = np.load('global_weights_dec.npy', allow_pickle=True)
 # print(b)
 
-in_file = open("org2_encrypted_key.txt", "rb") 
-encrypted_key = in_file.read() 
-in_file.close()
+# in_file = open("org2_encrypted_key.txt", "rb") 
+# encrypted_key = in_file.read() 
+# in_file.close()
 
-msg = pack('>Q', len(encrypted_key))
-print(msg)
-(length,) = unpack('>Q', msg)
-print(length)
+# msg = pack('>Q', len(encrypted_key))
+# print(msg)
+# (length,) = unpack('>Q', msg)
+# print(length)
+
+a = list()
+a.append(1)
+if a:
+    print('hello')

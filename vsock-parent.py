@@ -115,7 +115,8 @@ class VsockListener:
     """Server"""
     def __init__(self, conn_backlog=128):
         self.conn_backlog = conn_backlog
-        self.files_received = [0, 0, 0] # --> [sym key, inference, pub key]
+        self.files_received = [0, 0, 0] # --> [sym key, weights, pub key]
+        self.encrypted_average_weights = list()
 
     def bind(self, port):
         """Bind and listen for connections on the specified port"""
@@ -132,6 +133,44 @@ class VsockListener:
                 break
             print(data)
             from_client.close()
+
+    def recv_average_weights_parent(self):
+        full_msg = ''
+        while sum(self.files_received) < 3:
+            (from_client, (remote_cid, remote_port)) = self.sock.accept()
+            msg = from_client.recv(8)
+            if len(msg) == 8:
+                (length,) = unpack('>Q', msg)
+                data = b''
+                while len(data) < length:
+                    to_read = length - len(data)
+                    data += from_client.recv(1024 if to_read > 1024 else to_read)
+                
+                if length > 200 and length < 275: # this must be our encrypted symmetric key (usually 256 bytes)
+                    with open('inference_key_received', 'wb') as f:
+                        f.write(data)
+                    print('Encryption key received.')
+                    self.files_received[0] = 1
+                    if self.files_received[0] and self.files_received[1]:
+                        break
+                elif length > 500: # assume anything larger than 500 is our (encrypted) average weights
+                    encrypted_weights_received = data
+                    self.encrypted_average_weights = pickle.loads(encrypted_weights_received)
+                    print('Encrypted weights received.')
+                    #print(self.encrypted_weights_received)
+                    self.files_received[1] = 1
+                    if self.files_received[0] and self.files_received[1]:
+                        break
+                else: # enclave's public key  
+                    with open('enclave_public_key_received.pem', 'wb') as f:
+                        f.write(data)
+                    print('Enclave\'s public key received.')
+                    self.files_received[2] = 1
+        print(self.encrypted_average_weights)
+        print('All files received, shutting down...')
+        from_client.close()
+
+
 
     def recv_data_parent(self):
         full_msg = ''
@@ -194,7 +233,8 @@ def server_handler(args):
     server = VsockListener()
     server.bind(args.port)
     # server.recv_data()
-    server.recv_data_parent()
+    server.recv_average_weights_parent()
+    
 
 
 def main():

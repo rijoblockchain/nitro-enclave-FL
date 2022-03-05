@@ -33,6 +33,16 @@ def load_rsa_keys_parent():
         privkey = rsa_base.PrivateKey.load_pkcs1(f.read())
     return (pubkey, privkey)
 
+def load_rsa_keys_parent_from_enclave():
+    with open('parent_public_key.pem', 'rb') as f:
+        pubkey = rsa_base.PublicKey.load_pkcs1(f.read())
+    return pubkey
+
+def load_keys():
+    with open('enclave_public_key_received.pem', 'rb') as f:
+        pubkey = rsa_base.PublicKey.load_pkcs1(f.read())
+    return pubkey
+
 
 def generate_and_save_keys(private_key_path='private_key.pem', public_key_path='public_key.pem'):
     # generate and store keys
@@ -146,6 +156,11 @@ def encrypt_in_memory(incoming_bytes: bytes, public_key):
     encrypted_key = rsa_base.encrypt(symmetric_key, public_key)
     encrypted_contents = Fernet(symmetric_key).encrypt(incoming_bytes)
     return encrypted_key, encrypted_contents
+
+def encrypt_local_weights(incoming_bytes: bytes, symmetric_key):
+    encrypted_contents = Fernet(symmetric_key).encrypt(incoming_bytes)
+    return encrypted_contents
+
 
 
 def decrypt(file_path, encrypted_key, private_key_path):

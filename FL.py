@@ -416,6 +416,13 @@ loaded_np = np.load(load_bytes, allow_pickle=True)
 # print(arr1)
 #print(decrypted_weights)
 # print(global_weights)
+
+
+
+# data_string = pickle.dumps(npa)
+# data_arr = pickle.loads(data_string)
+
+# print(data_arr)
     
 
 
