@@ -283,7 +283,7 @@ def stream_handler(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='vsock-enclave-local')
+    parser = argparse.ArgumentParser(prog='vsock-enclave-global')
     parser.add_argument("--version", action="version",
                         help="Prints version information.",
                         version='%(prog)s 0.1.0')
