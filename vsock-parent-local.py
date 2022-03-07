@@ -48,7 +48,7 @@ class VsockStream:
         encrypted_key = in_file.read() 
         in_file.close()
 
-        org1_global_weights_encrypted = np.load('org1_global_weights.npy', allow_pickle=True)
+        org1_global_weights_encrypted = np.load('encrypted_average_weights.npy', allow_pickle=True)
         data_string = pickle.dumps(org1_global_weights_encrypted)
         length = pack('>Q', len(data_string))
         print(f'Sending weights of length {str(len(data_string))}')

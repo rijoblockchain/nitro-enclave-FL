@@ -161,9 +161,9 @@ class VsockStream:
                 #print(self.encrypted_weights_received)
                 self.files_received[0] = 1
                 if self.encrypted_key_received_org1 is not None and len(self.decrypted_weights_org1)==0:
-                    # print('Generating some entropy...')
-                    # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
-                    # time.sleep(10)
+                    print('Generating some entropy...')
+                    subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                    time.sleep(10)
                     
                     for x in range(len(self.encrypted_weights_org1)):
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
@@ -177,9 +177,9 @@ class VsockStream:
                 print('Encryption key received.')
                 self.files_received[1] = 1
                 if self.encrypted_weights_received_org1 is not None and len(self.decrypted_weights_org1)==0:
-                    # print('Generating some entropy...')
-                    # subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
-                    # time.sleep(10)
+                    print('Generating some entropy...')
+                    subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
+                    time.sleep(10)
                     for x in range(len(self.encrypted_weights_org1)):
                         self.decrypted_content = decrypt_local_weights(self.encrypted_weights_org1[x], self.encrypted_key_received_org1, self.enclave_private_key)
                         self.decrypted_weights_org1.append(np.frombuffer(self.decrypted_content, dtype=np.float32))
