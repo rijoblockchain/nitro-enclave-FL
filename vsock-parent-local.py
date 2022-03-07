@@ -1,6 +1,6 @@
-# vsock-parent.py
-# usage ex: python3 vsock-parent.py server 5005
-# (in a new terminal): python3 vsock-parent.py client 16 5006 (16 is the enclave CID)
+# vsock-parent-local.py
+# usage ex: python3 vsock-parent-local.py server 5005
+# (in a new terminal): python3 vsock-parent-local.py client 16 5006 (16 is the enclave CID)
 
 import argparse
 import socket, pickle
@@ -48,8 +48,8 @@ class VsockStream:
         encrypted_key = in_file.read() 
         in_file.close()
 
-        org1_local_weights_encrypted = np.load('org1_local_weights.npy', allow_pickle=True)
-        data_string = pickle.dumps(org1_local_weights_encrypted)
+        org1_global_weights_encrypted = np.load('org1_global_weights.npy', allow_pickle=True)
+        data_string = pickle.dumps(org1_global_weights_encrypted)
         length = pack('>Q', len(data_string))
         print(f'Sending weights of length {str(len(data_string))}')
         while True:
@@ -69,32 +69,7 @@ class VsockStream:
 
         self.sock.close()
             
-    def send_weights_parent_org2(self, endpoint):
-        in_file = open("org2_encrypted_key.txt", "rb") 
-        encrypted_key = in_file.read() 
-        in_file.close()
-
-        org2_local_weights_encrypted = np.load('org2_local_weights.npy', allow_pickle=True)
-        data_string = pickle.dumps(org2_local_weights_encrypted)
-        length = pack('>Q', len(data_string))
-        print(f'Sending weights of length {str(len(data_string))}')
-        while True:
-            try:
-                self.sock.sendall(length)
-                print('Length message sent')
-                self.sock.sendall(data_string)
-                break
-            except socket.timeout:
-                time.sleep(2)
-    
-        length = pack('>Q', len(encrypted_key))
-        print('Sending symmetric key of length: ', str(len(encrypted_key)))
-        self.connect(endpoint)
-        self.sock.sendall(length)
-        self.sock.sendall(encrypted_key)
-
-        self.sock.close()
-            
+       
 
 def client_handler(args):
 
@@ -107,8 +82,6 @@ def client_handler(args):
     client.connect(endpoint)
     client.send_weights_parent_org1(endpoint)
 
-    client.connect(endpoint)
-    client.send_weights_parent_org2(endpoint)
 
 
 class VsockListener:

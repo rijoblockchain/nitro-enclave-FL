@@ -50,7 +50,7 @@ Code for running a confidential, tensorflow-based classification of skin cancer 
 
 - Before we run the enclave, we need to make sure our parent instance is listening for a connection. Open up a new terminal and run 
 
-`python3 vsock-parent.py server 5006` The console should print `Server ready! `
+`python3 vsock-parent-local.py server 5006` The console should print `Server ready! `
 
 - Back in the first terminal, let's finally execute our enclave application. Again, we'll use the Nitro CLI
 
@@ -65,7 +65,7 @@ Code for running a confidential, tensorflow-based classification of skin cancer 
 - You'll be greeted with a long list of printouts describing the boot operations, but at the bottom you should see some messages from our python application.
 At this point, open up a third terminal and send the keys from parent to enclave with
 
-`python3 vsock-parent.py client 16 5005` (16 is the Enclave CID)
+`python3 vsock-parent-local.py client 16 5005` (16 is the Enclave CID)
 
 - This terminal should indicate that it is sending the parent's public key, encrypted image, and symmetric key. 
 Back in the enclave console, the application will acknowledge that it received and decrypted the messages before classifying the image, encrypting the inference, and sending it back to the parent server. At this point the enclave will shut down, giving a connection error. 

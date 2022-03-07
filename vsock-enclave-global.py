@@ -1,4 +1,4 @@
-# vsock-enclave-bidirectional.py
+# vsock-enclave-global.py
 # see Dockerfile for usage
 
 import argparse
@@ -283,7 +283,7 @@ def stream_handler(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='vsock-enclave-bidirectional')
+    parser = argparse.ArgumentParser(prog='vsock-enclave-local')
     parser.add_argument("--version", action="version",
                         help="Prints version information.",
                         version='%(prog)s 0.1.0')

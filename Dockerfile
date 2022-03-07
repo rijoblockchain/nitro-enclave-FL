@@ -10,7 +10,7 @@ RUN sleep 20
 RUN cat /proc/sys/kernel/random/entropy_avail
 
 # copy files and model
-COPY vsock-enclave-bidirectional.py .
+COPY vsock-enclave-local.py .
 COPY crypto_utils.py .
 COPY requirements.txt .
 COPY predict_tflite.py .
@@ -28,4 +28,4 @@ RUN pip3 install -r requirements.txt
 RUN ssh-keygen -t rsa -f my_key -m PEM -N "" && ssh-keygen -f my_key.pub -m 'PEM' -e > my_public_key.pem && openssl rsa -in my_key -outform pem > my_private_key.pem
 
 # launch the python script
-CMD ["/usr/local/bin/python3", "-u", "vsock-enclave-bidirectional.py", "3", "5005", "5006"]
+CMD ["/usr/local/bin/python3", "-u", "vsock-enclave-local.py", "3", "5005", "5006"]
