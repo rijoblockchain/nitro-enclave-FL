@@ -29,9 +29,9 @@ def load_rsa_keys():
 def load_rsa_keys_parent():
     with open('parent_public_key.pem', 'rb') as f:
         pubkey = rsa_base.PublicKey.load_pkcs1(f.read())
-    with open('parent_private_key.pem', 'rb') as f:
-        privkey = rsa_base.PrivateKey.load_pkcs1(f.read())
-    return (pubkey, privkey)
+    # with open('parent_private_key.pem', 'rb') as f:
+    #     privkey = rsa_base.PrivateKey.load_pkcs1(f.read())
+    return pubkey
 
 def load_rsa_keys_parent_from_enclave():
     with open('parent_public_key.pem', 'rb') as f:

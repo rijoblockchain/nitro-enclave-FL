@@ -36,7 +36,7 @@ class VsockStream:
 
     def send_keys_parent(self):
         print('Loading keys.')
-        (self.parent_public_key, self.parent_private_key) = load_rsa_keys_parent()
+        self.parent_public_key = load_rsa_keys_parent()
         length = pack('>Q', len(self.parent_public_key._save_pkcs1_pem()))
         print(length)
         self.sock.sendall(length)
