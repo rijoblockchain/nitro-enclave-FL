@@ -1,75 +1,82 @@
-# nitro-enclave-tensorflow
+sudo yum install libXcomposite libXcursor libXi libXtst libXrandr alsa-lib mesa-libEGL libXdamage mesa-libGL libXScrnSaver -y 
 
-Code for running a confidential, tensorflow-based classification of skin cancer images within an AWS Nitro Enclave. The user's data can only be decrypted within the secure enclave, and the inference can only be decrypted by the user. 
+sudo amazon-linux-extras install aws-nitro-enclaves-cli
 
-## Scenario
-1. Parent instance (rich application) starts a vsock server that listens for data from the enclave.
-2. Enclave is initialized with its own RSA keypair, which is not visible to the host instance and is erased when the enclave is closed.
-3. Enclave sends its public key to the parent server and begins listening for a response.
-4. Parent receives key, encrypts image using the enclave's pub key (acting as or on behalf of the user for simplicity). 
-5. Parent sends its public key, the encrypted image, and the encrypted symmetric key to the enclave. 
-6. Enclave receives these files, decrypts the image, invokes the tensorflow lite model, encrypts the classification result, and sends it back the parent server. 
-7. Parent receives the encrypted classification result, decrypts it (again, this is a proxy for sending the file to the actual patient), and prints it out. 
+sudo yum install aws-nitro-enclaves-cli-devel -y
 
-## Setup
-- Login to your instance via SSH and update with
+sudo usermod -aG ne $USER
 
-`sudo yum update`
+sudo usermod -aG docker $USER
 
-- Install docker and the Nitro CLI.
+sudo nano /etc/nitro_enclaves/allocator.yaml
 
-`sudo amazon-linux-extras install docker aws-nitro-enclaves-cli aws-nitro-enclaves-cli-devel -y`
+Memory → 8192
+CPU → 2
 
-- Start the docker service.
+sudo systemctl start nitro-enclaves-allocator.service && sudo systemctl enable nitro-enclaves-allocator.service
 
-`sudo service docker start`
+sudo systemctl start docker && sudo systemctl enable docker
 
-- Elevate user privileges for docker and nice editor.
+Reboot
 
-`sudo usermod -aG ne ec2-user && sudo usermod -aG docker ec2-user `
+sudo yum install git
 
-- Next, we need to configure the resources (CPU cores and memory) that our enclave will be able to access. Edit the `/etc/nitro_enclaves/allocator.yaml` file and increase the default values to 8192 MB RAM and 4 cores (though I'm sure you can get away with less). To submit these changes, run 
+git clone https://github.com/evandiewald/nitro-enclave-tensorflow.git
 
-`sudo systemctl start nitro-enclaves-allocator.service && sudo systemctl enable nitro-enclaves-allocator.service `
+cd nitro-enclave-tensorflow
 
-- At this point, reboot your instance to allow the various updates to take effect. 
+docker build -t enclave-tensorflow .
 
-- After the reboot, clone the public repository
+nitro-cli build-enclave --docker-uri enclave-tensorflow:latest --output-file enclave-tensorflow.eif
 
-`git clone https://github.com/rijoblockchain/nitro-enclave-FL`
 
-- And cd into the repo directory. Build the docker image with
+Open a new terminal
 
-`docker build -t enclave-tensorflow . `
+cd nitro-enclave-tensorflow
 
-- Once the image is created successfully, we use the Nitro CLI to convert it into an EIF file:
 
-`nitro-cli build-enclave --docker-uri enclave-tensorflow:latest --output-file enclave-tensorflow.eif `
+Install Pip
 
-- If all goes well, you'll see an attestation document with 3 SHA hashes, which correspond to the enclave image, kernel, and application.
+curl -O https://bootstrap.pypa.io/get-pip.py
 
-- Before we run the enclave, we need to make sure our parent instance is listening for a connection. Open up a new terminal and run 
+python3 get-pip.py --user
 
-`python3 vsock-parent-local.py server 5006` The console should print `Server ready! `
 
-- Back in the first terminal, let's finally execute our enclave application. Again, we'll use the Nitro CLI
+pip3 install cryptography
+pip3 install rsa
+pip3 install pillow
+pip3 install imutils
+pip3 install scikit-learn
+pip3 install opencv-python
+pip3 install tensorflow-cpu
 
-`nitro-cli run-enclave --eif-path enclave-tensorflow.eif --memory 8192 --cpu-count 4 --enclave-cid 16 --debug-mode `
+ImportError: /lib64/libm.so.6: version `GLIBC_2.27' not found
+pip3 install open3d==0.9
 
-- A successful output will show some basic metadata about the enclave and its resources.
+python3 vsock-parent-global.py server 5006
 
-- Take note of the EnclaveID, which you will need in the next step. As soon as the enclave boots, the server in the other terminal should print out Enclave's public key received. But it would be nice to know what was going on in our enclave for debugging purposes. Since we included the `--debug-mode` flag, the Nitro CLI exposes a console that will allow us to view the output from our application and make sure it's running properly. 
+python3 vsock-parent-local.py server 5006
 
-`nitro-cli console --enclave-id $ENCLAVE_ID `
 
-- You'll be greeted with a long list of printouts describing the boot operations, but at the bottom you should see some messages from our python application.
-At this point, open up a third terminal and send the keys from parent to enclave with
+Back in the first terminal
 
-`python3 vsock-parent-local.py client 16 5005` (16 is the Enclave CID)
+nitro-cli run-enclave --eif-path enclave-tensorflow.eif --memory 8192 --cpu-count 2 --enclave-cid 16 --debug-mode
 
-- This terminal should indicate that it is sending the parent's public key, encrypted image, and symmetric key. 
-Back in the enclave console, the application will acknowledge that it received and decrypted the messages before classifying the image, encrypting the inference, and sending it back to the parent server. At this point the enclave will shut down, giving a connection error. 
 
-- Finally, the server will receive the inference, decrypt it, and print out the results!
+Terminal 4
 
-- :exclamation: Don't forget to terminate your EC2 instance to prevent further charges.
+python3 FL-Local-org1.py
+
+Terminal 5
+
+python3 FL-Local-org2.py
+
+EnclaveID=i-09a42d462278cc681-enc17f34c625440269
+
+nitro-cli console --enclave-id $ENCLAVE_ID
+
+In third terminal
+
+python3 vsock-parent-global.py client 16 5005
+
+python3 vsock-parent-local.py client 16 5005
