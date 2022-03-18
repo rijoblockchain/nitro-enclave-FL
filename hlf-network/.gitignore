@@ -1,0 +1,26 @@
+/channel-artifacts/*.tx
+/channel-artifacts/*.block
+/ledgers
+/ledgers-backup
+/channel-artifacts/*.json
+/org3-artifacts/crypto-config/*
+organizations/fabric-ca/ordererOrg/*
+organizations/fabric-ca/payer/*
+organizations/fabric-ca/provider1/*
+organizations/fabric-ca/provider2/*
+organizations/ordererOrganizations/*
+organizations/peerOrganizations/*
+system-genesis-block/*
+*.tar.gz
+log.txt
+
+# omit Go vendor directories
+vendor/
+.vscode
+.gradle
+.idea
+# Dependency directories
+node_modules/
+# Ignore Gradle build output directory
+build
+package-lock.json

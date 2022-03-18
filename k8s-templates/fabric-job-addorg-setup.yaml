@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: addorg-fabric-setup
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: addorg-fabric-setup
+    spec:
+      volumes:
+        - name: fabricfiles
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+      containers:
+        - name: addorg-fabric-setup
+          image: hyperledger/fabric-tools:%FABRIC_TAG%
+          env:
+          - name: PEERORG
+            value: %ADMINORG%
+          command: ["sh"]
+          args:  ["-c", "/scripts/addorg-fabric-setup.sh 2>&1;"]
+          # resources:
+          #   requests:
+          #     memory: "150Mi"
+          #     cpu: "150m"
+          #   limits:
+          #     memory: "200Mi"
+          #     cpu: "150m"
+          volumeMounts:
+            - mountPath: /organizations
+              name: fabricfiles
+              subPath: organizations
+            - mountPath: /scripts
+              name: fabricfiles
+              subPath: scripts
+            - mountPath: /configtx
+              name: fabricfiles
+              subPath: configtx
+            - mountPath: /channel-artifacts
+              name: fabricfiles
+              subPath: channel-artifacts
+      restartPolicy: Never

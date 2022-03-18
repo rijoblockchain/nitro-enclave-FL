@@ -1,0 +1,64 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  namespace: healthcare-hlf
+  name: ingress-payer
+  annotations:
+    kubernetes.io/ingress.class: "alb"
+    #cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "instance"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS": 443}]'
+
+spec:
+
+  # tls:
+  #   - hosts:
+  #       - hlf-k8.tk
+  #       - api.hlf-k8.tk
+  #       - explorer.hlf-k8.tk
+  #       - grafana.hlf-k8.tk
+  #     secretName: tls-cert
+  rules:
+    # - host: blockboard-hlf-k8.ml
+    #   http:
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: frontend
+    #             port:
+    #               number: 80
+    - host: api.blockboard-hlf-k8.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              serviceName: api-payer
+              servicePort: 4000
+
+
+    # - host: explorer.hlf-k8.tk
+    #   http:
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: explorer
+    #             port:
+    #               number: 8080
+
+
+    # - host: grafana.hlf-k8.tk
+    #   http:
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: grafana
+    #             port:
+    #               number: 3000

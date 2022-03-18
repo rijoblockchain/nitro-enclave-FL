@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: explorer-db-%ORG%
+spec:
+  selector:
+    matchLabels:
+      app: explorer-db-%ORG%
+  template:
+    metadata:
+      labels:
+        app: explorer-db-%ORG%
+    spec:
+      containers:
+      - name: explorer-db-%ORG%
+        image: hyperledger/explorer-db:latest
+        env:
+          - name: DATABASE_DATABASE
+            value: fabricexplorer
+          - name: DATABASE_USERNAME
+            value: hppoc
+          - name: DATABASE_PASSWORD
+            value: password 
+        # resources:
+        #   limits:
+        #     memory: "528Mi"
+        #     cpu: "400m"
+        ports:
+        - containerPort: 5432
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  name: explorerdb-service-%ORG%
+spec:
+  selector:
+    app: explorer-db-%ORG%
+  ports:
+  - port: 5432
+    targetPort: 5432
+

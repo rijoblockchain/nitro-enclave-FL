@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: api-%ORG%
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: api-%ORG%
+  template:
+    metadata:
+      labels:
+        name: api-%ORG%
+    spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+        - name: ca-client-config-%ORG%
+          configMap:
+            name: ca-client-config-%ORG%
+            items:
+              - key: config.json
+                path: config.json
+                mode: 0544
+      containers:
+        - name: api-%ORG%
+          stdin: true
+          tty: true
+          # resources:
+          #   limits:
+          #     memory: "450Mi"
+          #     cpu: "400m"
+          #   requests:
+          #     memory: "400Mi"
+          #     cpu: "300m"
+          image: rijojani/api:1.0
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: data
+              mountPath: /usr/src/app/connection-profile
+              subPath: connection-profile
+            - name: data
+              mountPath: /organizations
+              subPath: organizations
+            - name: data
+              mountPath: /usr/src/app/wallet
+              subPath: wallet
+            - mountPath: /usr/src/app/config.json
+              name: ca-client-config-%ORG%
+              subPath: config.json  
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  labels:
+    app: api-%ORG%
+  name: api-%ORG%
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4000
+    protocol: TCP
+    targetPort: 4000
+  selector:
+    name: api-%ORG%
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   namespace: healthcare-hlf
+#   labels:
+#     app: api-%ORG%
+#   name: api-%ORG%
+#   annotations:
+#     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+# spec:
+#   type: LoadBalancer
+#   ports:
+#   - port: 4000
+#     protocol: TCP
+#     targetPort: 4000
+#   selector:
+#     name: api-%ORG%

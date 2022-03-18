@@ -1,0 +1,52 @@
+[
+  {
+    "name": "PayerMSPCollection",
+    "policy": "OR('PayerMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":0,
+    "memberOnlyRead": false,
+    "memberOnlyWrite": false
+    
+ },
+ {
+   "name": "PayerProvider1MSPCollection",
+   "policy": "OR('PayerMSP.member', 'Provider1MSP.member')",
+   "requiredPeerCount": 1,
+   "maxPeerCount": 1,
+   "blockToLive":0,
+   "memberOnlyRead": false,
+   "memberOnlyWrite": false
+   
+},
+{
+  "name": "PayerProvider2MSPCollection",
+  "policy": "OR('PayerMSP.member', 'Provider2MSP.member')",
+  "requiredPeerCount": 1,
+  "maxPeerCount": 1,
+  "blockToLive":0,
+  "memberOnlyRead": false,
+  "memberOnlyWrite": false
+ 
+},
+{
+  "name": "PayerLab1MSPCollection",
+  "policy": "OR('PayerMSP.member', 'Lab1MSP.member')",
+  "requiredPeerCount": 1,
+  "maxPeerCount": 1,
+  "blockToLive":0,
+  "memberOnlyRead": false,
+  "memberOnlyWrite": false
+ 
+},
+{
+  "name": "PayerPharma1MSPCollection",
+  "policy": "OR('PayerMSP.member', 'Pharma1MSP.member')",
+  "requiredPeerCount": 1,
+  "maxPeerCount": 1,
+  "blockToLive":0,
+  "memberOnlyRead": false,
+  "memberOnlyWrite": false
+ 
+}
+]

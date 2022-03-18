@@ -1,0 +1,86 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: healthcare-hlf
+  name: ingress-%ORG%
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    #cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+
+  # tls:
+  #   - hosts:
+  #       - payer-bc.ml
+  #       - api.payer-bc.ml
+  #       - explorer.payer-bc.ml
+  #       - grafana.payer-bc.ml
+  #     secretName: tls-cert
+  rules:
+    - host: payer-bc.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-%ORG%
+                port:
+                  number: 80
+    
+    # - host: www.payer-bc.ml
+    #   http:
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: webservice-%ORG%
+    #             port:
+    #               number: 4000
+
+    - host: api.payer-bc.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-%ORG%
+                port:
+                  number: 4000
+
+
+    - host: explorer.payer-bc.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: explorer-%ORG%
+                port:
+                  number: 8080
+
+
+    - host: grafana.payer-bc.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana-%ORG%
+                port:
+                  number: 3000
+          
+    - host: prometheus.payer-bc.ml
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-%ORG%
+                port:
+                  number: 9090

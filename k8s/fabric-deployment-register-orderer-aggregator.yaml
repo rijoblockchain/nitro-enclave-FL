@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: register-o-aggregator
+spec:
+  selector:
+    matchLabels:
+      app: register-o-aggregator
+  replicas: 1
+  template:
+    metadata:
+        labels:
+         app: register-o-aggregator
+    spec:
+      volumes:
+        - name: fabricfiles
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+      containers:
+        - name: register-o-aggregator
+          image: hyperledger/fabric-ca-tools:latest
+          env:
+           - name: CA_NAME
+             value: "rca-aggregator"
+           - name: DOMAIN
+             value: "aggregator"
+           - name: ORDERER_ORG
+             value: "aggregator"
+          # resources:
+          #   requests:
+          #     memory: "300Mi"
+          #     cpu: "50m"
+          #   limits:
+          #     memory: "500Mi"
+          #     cpu: "50m"
+          volumeMounts:
+            - mountPath: /organizations
+              name: fabricfiles
+              subPath: organizations
+            - mountPath: /scripts
+              name: fabricfiles
+              subPath: scripts
+          command: ["sh"]
+          args:  ["-c", "/scripts/orderer-certs.sh 2>&1; while true; do sleep 90; done;"]
+

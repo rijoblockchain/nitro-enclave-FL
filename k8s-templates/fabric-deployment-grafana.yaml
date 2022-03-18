@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: grafana-%ORG%
+spec:
+  selector:
+    matchLabels:
+      app: grafana-%ORG%
+  template:
+    metadata:
+      labels:
+        app: grafana-%ORG%
+    spec:
+      volumes:
+        - name: grafana-config-%ORG%
+          configMap: 
+           name: grafana-config-%ORG%
+           items:
+              - key: datasource.yml
+                path: datasource.yml
+              - key: dashboard.json
+                path: dashboard.json
+              - key: dashboard.yaml
+                path: dashboard.yaml
+      containers:
+      - name: grafana-%ORG%
+        image: grafana/grafana:latest
+        env:
+          - name: GF_PATHS_PROVISIONING
+            value: /var/lib/grafana/provisioning/
+        # resources:
+        #   limits:
+        #     memory: "128Mi"
+        #     cpu: "500m"
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+         - name:  grafana-config-%ORG%
+           mountPath:  /var/lib/grafana/provisioning/datasources/datasource.yml
+           subPath: datasource.yml
+         - name:  grafana-config-%ORG%
+           mountPath:  /var/lib/grafana/provisioning/dashboards/hlf/dashboard.json
+           subPath: dashboard.json
+         - name:  grafana-config-%ORG%
+           mountPath:  /var/lib/grafana/provisioning/dashboards/dashboard.yaml
+           subPath: dashboard.yaml
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  name: grafana-%ORG%
+spec:
+  selector:
+    app: grafana-%ORG%
+  ports:
+  - port: 3000
+    targetPort: 3000
+
+
+

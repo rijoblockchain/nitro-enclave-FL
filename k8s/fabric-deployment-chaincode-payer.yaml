@@ -1,0 +1,45 @@
+apiVersion: apps/v1 # for versions before 1.8.0 use apps/v1beta1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: chaincode-payer
+  labels:
+    app: chaincode-payer
+spec:
+  selector:
+    matchLabels:
+      app: chaincode-payer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: chaincode-payer
+    spec:
+      containers:
+        - image: rijojani/basic-cc-hlf:1.0
+          imagePullPolicy: Always
+          name: chaincode-payer
+          env:
+            - name: CHAINCODE_ID
+              value: "basic:8b1f20ee8d455960347e5f33f8cdda348ad067d9d2fb3455e0b16186877478e9"
+            - name: CHAINCODE_SERVER_ADDRESS
+              value: "0.0.0.0:7052"
+          ports:
+            - containerPort: 7052
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  name: cc-payer
+  labels:
+    app: cc-payer
+spec:
+  ports:
+    - name: grpc
+      port: 7052
+      targetPort: 7052
+  selector:
+    app: chaincode-payer

@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    namespace: healthcare-hlf
+    name: orderer%NUM%-%ORG%
+spec:
+    selector:
+        matchLabels:
+            name: orderer%NUM%-%ORG%
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                name: orderer%NUM%-%ORG%
+        spec:
+           volumes:
+             - name: fabricfiles
+               persistentVolumeClaim:
+                  claimName: hlf-pvc
+           containers:
+             - image: hyperledger/fabric-orderer:2.3
+               name: orderer%NUM%-%ORG%
+               imagePullPolicy: IfNotPresent
+               env:
+                - name: CONFIGTX_ORDERER_ADDRESSES
+                  value: "orderer%NUM%-%ORG%-%DOMAIN%:7050"
+                - name: ORDERER_GENERAL_LISTENADDRESS
+                  value: "0.0.0.0"
+                - name: ORDERER_GENERAL_LISTENPORT
+                  value: "7050"
+                - name: ORDERER_GENERAL_LOGLEVEL
+                  value: debug
+                - name: ORDERER_GENERAL_LOCALMSPDIR
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/msp
+                - name: ORDERER_GENERAL_LOCALMSPID
+                  value: %ORG%MSP
+                - name: ORDERER_GENERAL_GENESISMETHOD
+                  value: file
+                - name: ORDERER_GENERAL_GENESISFILE
+                  value: /system-genesis-block/genesis.block
+                - name: ORDERER_GENERAL_TLS_ENABLED
+                  value: "true"
+                - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/tls/server.key
+                - name: ORDERER_GENERAL_TLS_CERTIFICATE
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/tls/server.crt
+                - name: ORDERER_GENERAL_TLS_ROOTCAS
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/tls/ca.crt
+                - name:  ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/tls/server.key
+                - name:  ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+                  value: /organizations/ordererOrganizations/%DOMAIN%/orderers/orderer%NUM%-%ORG%.%DOMAIN%/tls/server.crt
+               
+              #  resources:
+              #    limits:
+              #       memory: "250Mi"
+              #       cpu: "250m"
+              #    requests:
+              #       memory: "200Mi"
+              #       cpu: "150m"               
+               
+               volumeMounts:
+                - name:  fabricfiles
+                  mountPath:  /organizations
+                  subPath: organizations
+          
+                - name: fabricfiles
+                  mountPath: /system-genesis-block
+                  subPath: system-genesis-block
+---
+kind: Service
+apiVersion: v1
+metadata:
+    namespace: healthcare-hlf
+    name: orderer%NUM%-%ORG%
+    labels:
+        run: orderer%NUM%-%ORG%
+spec:
+    selector:
+        name: orderer%NUM%-%ORG%
+    type: NodePort
+    ports:
+        - protocol: TCP
+          port: 7050
+          targetPort: 7050
+          nodePort: %NODEPORT%
+          name: grpc
+        

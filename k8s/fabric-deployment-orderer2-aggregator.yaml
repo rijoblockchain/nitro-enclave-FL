@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    namespace: healthcare-hlf
+    name: orderer2-aggregator
+spec:
+    selector:
+        matchLabels:
+            name: orderer2-aggregator
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                name: orderer2-aggregator
+        spec:
+           volumes:
+             - name: fabricfiles
+               persistentVolumeClaim:
+                  claimName: hlf-pvc
+           containers:
+             - image: hyperledger/fabric-orderer:2.3
+               name: orderer2-aggregator
+               imagePullPolicy: IfNotPresent
+               env:
+                - name: CONFIGTX_ORDERER_ADDRESSES
+                  value: "aa99a1ca3f752403bbf3b6c47f2ee332-932af91f5e062ebb.elb.us-east-1.amazonaws.com:7050"
+                - name: ORDERER_GENERAL_LISTENADDRESS
+                  value: "0.0.0.0"
+                - name: ORDERER_GENERAL_LISTENPORT
+                  value: "7050"
+                - name: ORDERER_GENERAL_LOGLEVEL
+                  value: debug
+                - name: ORDERER_GENERAL_LOCALMSPDIR
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/msp
+                - name: ORDERER_GENERAL_LOCALMSPID
+                  value: aggregatorMSP
+                - name: ORDERER_GENERAL_GENESISMETHOD
+                  value: file
+                - name: ORDERER_GENERAL_GENESISFILE
+                  value: /system-genesis-block/genesis.block
+                - name: ORDERER_GENERAL_TLS_ENABLED
+                  value: "true"
+                - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/tls/server.key
+                - name: ORDERER_GENERAL_TLS_CERTIFICATE
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/tls/server.crt
+                - name: ORDERER_GENERAL_TLS_ROOTCAS
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/tls/ca.crt
+                - name:  ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/tls/server.key
+                - name:  ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+                  value: /organizations/ordererOrganizations/aggregator/orderers/orderer2-aggregator.aggregator/tls/server.crt
+               
+              #  resources:
+              #    limits:
+              #       memory: "250Mi"
+              #       cpu: "250m"
+              #    requests:
+              #       memory: "200Mi"
+              #       cpu: "150m"               
+               
+               volumeMounts:
+                - name:  fabricfiles
+                  mountPath:  /organizations
+                  subPath: organizations
+          
+                - name: fabricfiles
+                  mountPath: /system-genesis-block
+                  subPath: system-genesis-block
+---
+kind: Service
+apiVersion: v1
+metadata:
+    namespace: healthcare-hlf
+    name: orderer2-aggregator
+    labels:
+        run: orderer2-aggregator
+spec:
+    selector:
+        name: orderer2-aggregator
+    type: NodePort
+    ports:
+        - protocol: TCP
+          port: 7050
+          targetPort: 7050
+          nodePort: 30310
+          name: grpc
+        

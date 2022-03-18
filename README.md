@@ -36,7 +36,7 @@ Code for running a confidential, tensorflow-based classification of skin cancer 
 
 - After the reboot, clone the public repository
 
-`git clone https://github.com/evandiewald/nitro-enclave-tensorflow.git `
+`git clone https://github.com/rijoblockchain/nitro-enclave-FL`
 
 - And cd into the repo directory. Build the docker image with
 

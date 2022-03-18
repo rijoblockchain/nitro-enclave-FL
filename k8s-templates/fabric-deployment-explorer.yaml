@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: explorer-%ORG%
+spec:
+  selector:
+    matchLabels:
+      app: explorer-%ORG%
+  template:
+    metadata:
+      labels:
+        app: explorer-%ORG%
+    spec:
+      volumes:
+        - name: fabricfiles
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+        - name: explorer-config-%ORG%
+          configMap:
+            name: explorer-config-%ORG%
+            items:
+              - key: config.json
+                path: config.json
+              - key: network.json
+                path: network.json
+      containers:
+        - name: explorer-%ORG%
+          image: hyperledger/explorer:latest
+          env:
+            - name: DATABASE_HOST
+              value: "explorerdb-service-%ORG%"
+            - name: DATABASE_DATABASE
+              value: "fabricexplorer"
+            - name: DATABASE_USERNAME
+              value: "hppoc"
+            - name: DATABASE_PASSWD
+              value: "password"
+            - name: LOG_LEVEL_APP
+              value: "debug"
+            - name: LOG_LEVEL_DB
+              value: "debug"
+            - name: LOG_LEVEL_CONSOLE
+              value: "info"
+            - name: LOG_CONSOLE_STDOUT
+              value: "true"
+            - name: DISCOVERY_AS_LOCALHOST
+              value: "false"
+          # resources:
+          #   limits:
+          #     memory: "528Mi"
+          #     cpu: "400m"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /organizations
+              name: fabricfiles
+              subPath: organizations
+            - mountPath: /opt/explorer/app/platform/fabric/config.json
+              name: explorer-config-%ORG%
+              subPath: config.json  
+            - mountPath: /opt/explorer/app/platform/fabric/healthcare-network.json
+              name: explorer-config-%ORG%
+              subPath: network.json  
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  name: explorer-%ORG%
+spec:
+  selector:
+    app: explorer-%ORG%
+  ports:
+    - port: 8080
+      targetPort: 8080

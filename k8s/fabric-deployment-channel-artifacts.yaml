@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: artifacts
+spec:
+  selector:
+    matchLabels:
+       app: artifacts
+  replicas: 1
+  template:
+    metadata:
+      labels:
+       app: artifacts
+    spec:
+      containers:
+        - name: artifacts
+          image: hyperledger/fabric-tools:2.3
+          env:
+           - name: ORDERER_ORG
+             value: "aggregator"
+           - name: DOMAIN
+             value: "payer"
+           - name: PEER_ORG
+             value: "payer"
+          workingDir: /
+          volumeMounts:
+            - mountPath: /organizations
+              name: fabricfiles
+              subPath: organizations
+            - mountPath: /configtx
+              name: fabricfiles
+              subPath: configtx
+            - mountPath: /system-genesis-block
+              name: fabricfiles
+              subPath: system-genesis-block
+            - mountPath: /channel-artifacts
+              name: fabricfiles
+              subPath: channel-artifacts
+            - mountPath: /scripts
+              name: fabricfiles
+              subPath: scripts
+          command: ["sh"]
+          args:  ["-c", "/scripts/gen-channel-artifacts.sh 2>&1; while true; do sleep 90; done;"] 
+      volumes:
+        - name: fabricfiles
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+

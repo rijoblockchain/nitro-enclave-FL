@@ -1,0 +1,49 @@
+{
+    "name": "hlf-network-provider${ORG}",
+    "version": "1.0.0",
+    "client": {
+        "organization": "Provider${ORG}",
+        "connection": {
+            "timeout": {
+                "peer": {
+                    "endorser": "300"
+                }
+            }
+        }
+    },
+    "organizations": {
+        "Provider${ORG}": {
+            "mspid": "Provider${ORG}MSP",
+            "peers": [
+                "peer0.provider${ORG}.hlf-network.com"
+            ],
+            "certificateAuthorities": [
+                "ca.provider${ORG}.hlf-network.com"
+            ]
+        }
+    },
+    "peers": {
+        "peer0.provider${ORG}.hlf-network.com": {
+            "url": "grpcs://localhost:${P0PORT}",
+            "tlsCACerts": {
+                "pem": "${PEERPEM}"
+            },
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.provider${ORG}.hlf-network.com",
+                "hostnameOverride": "peer0.provider${ORG}.hlf-network.com"
+            }
+        }
+    },
+    "certificateAuthorities": {
+        "ca.provider${ORG}.hlf-network.com": {
+            "url": "https://localhost:${CAPORT}",
+            "caName": "ca-provider${ORG}",
+            "tlsCACerts": {
+                "pem": ["${CAPEM}"]
+            },
+            "httpOptions": {
+                "verify": false
+            }
+        }
+    }
+}

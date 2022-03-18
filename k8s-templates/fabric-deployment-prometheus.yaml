@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: prometheus-%ORG%
+spec:
+  selector:
+    matchLabels:
+      app: prometheus-%ORG%
+  template:
+    metadata:
+      labels:
+        app: prometheus-%ORG%
+    spec:
+      volumes:
+        - name:  prometheus-config-%ORG%
+          configMap:
+            name: monitoring-config-%ORG%
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
+      containers:
+      - name: prometheus-%ORG%
+        image: prom/prometheus:latest
+        # resources:
+        #   limits:
+        #     memory: "128Mi"
+        #     cpu: "300m"
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+          - name:  prometheus-config-%ORG%
+            mountPath:  /etc/prometheus/prometheus.yml
+            subPath: prometheus.yml
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  name: prometheus-%ORG%
+spec:
+  selector:
+    app: prometheus-%ORG%
+  ports:
+  - port: 9090
+    targetPort: 9090

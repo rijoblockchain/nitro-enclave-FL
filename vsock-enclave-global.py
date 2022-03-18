@@ -6,7 +6,6 @@ import socket, pickle
 from struct import unpack, pack
 import sys
 from crypto_utils import *
-from predict_tflite import classify_image_in_memory
 import time
 import random
 import subprocess
@@ -114,33 +113,6 @@ class VsockStream:
             print('Global gradient update failed')
 
 
-
-    def classify_and_send_inference(self, endpoint):
-        if self.image_received:
-            print('Classifying image...')
-            output = classify_image_in_memory(self.image_received)
-            print('Generating some entropy...')
-            subprocess.run('rngd -r /dev/urandom -o /dev/random', shell=True)
-            print('Encrypting inference...')
-            encrypted_key, encrypted_contents = encrypt_in_memory(output, self.parent_public_key)
-            length = pack('>Q', len(encrypted_contents))
-            print('Sending encrypted inference, length: ', str(len(encrypted_contents)))
-            self.sock.sendall(length)
-            self.sock.sendall(encrypted_contents)
-
-            time.sleep(2)
-            print('Sending encryption key...')
-            length = pack('>Q', len(encrypted_key))
-            self.connect(endpoint)
-            self.sock.sendall(length)
-            self.sock.sendall(encrypted_key)
-            print('Length of encryption key: ', str(len(encrypted_key)))
-
-            time.sleep(2)
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
-        else:
-            print('Classification unsuccessful: image not received yet.')
 
     def recv_data_enclave_org1(self):
         full_msg = ''
@@ -279,7 +251,7 @@ def stream_handler(args):
     client.connect(endpoint)
     client.average_weights_and_encryption(endpoint)
     print('Average is calculated')
-    # client.classify_and_send_inference(endpoint)
+   
 
 
 def main():

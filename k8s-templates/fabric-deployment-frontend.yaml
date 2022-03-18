@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: frontend-%ORG%
+spec:
+  selector:
+    matchLabels:
+      name: frontend-%ORG%
+  template:
+    metadata:
+      labels:
+        name: frontend-%ORG%
+    spec:
+      containers:
+        - name: frontend-%ORG%
+          # resources:
+          #   limits:
+          #     memory: "350Mi"
+          #     cpu: "300m"
+          #   requests:
+          #     memory: "250Mi"
+          #     cpu: "200m"
+          image: rijojani/frontend-%ORG%:1.0
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  labels:
+    app: frontend-%ORG%
+  name: frontend-%ORG%
+spec:
+  type: ClusterIP
+  ports:
+    - name: "frontend-%ORG%"
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    name: frontend-%ORG%
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: healthcare-hlf
+  labels:
+    app: webservice-%ORG%
+  name: webservice-%ORG%
+spec:
+  type: ClusterIP
+  ports:
+    - name: "webservice-%ORG%"
+      port: 4000
+      protocol: TCP
+      targetPort: 4000
+  selector:
+    name: frontend-%ORG%

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: healthcare-hlf
+  name: register-p-%ORG%
+spec:
+  selector:
+    matchLabels:
+      app: register-p-%ORG%
+  replicas: 1
+  template:
+    metadata:
+        labels:
+         app: register-p-%ORG%
+    spec:
+      volumes:
+        - name: fabricfiles
+          persistentVolumeClaim:
+            claimName: hlf-pvc
+      containers:
+        - name: register-p-%ORG%
+          image: hyperledger/fabric-ca-tools:latest
+          env:
+           - name: CA_NAME
+             value: "rca-%ORG%"
+           - name: DOMAIN
+             value: "%DOMAIN%"
+           - name: PEER_ORG
+             value: "%ORG%"
+          # resources:
+          #   requests:
+          #     memory: "300Mi"
+          #     cpu: "50m"
+          #   limits:
+          #     memory: "500Mi"
+          #     cpu: "50m"
+          volumeMounts:
+            - mountPath: /organizations
+              name: fabricfiles
+              subPath: organizations
+            - mountPath: /scripts
+              name: fabricfiles
+              subPath: scripts
+          command: ["sh"]
+          args:  ["-c", "/scripts/org-certs.sh 2>&1; while true; do sleep 90; done;"]
